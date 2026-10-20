@@ -24,6 +24,7 @@ const HEADERS = ["Fecha", "Nombre", "Empresa", "Correo", "Cesta", "Precio (IVA i
 const ESTADOS = ["Pendiente", "Contactado", "Presupuesto enviado", "Pedido cerrado", "Descartado"];
 const HIGHLIGHTS = ["lote-5", "lote-11", "jamonero-21", "cesta-41"];
 
+
 // Plantillas de los correos automáticos de «Pedir información».
 // Diseño en tablas con estilos en línea para que se vea bien en Gmail, Outlook y móvil.
 
@@ -66,15 +67,24 @@ const afeam = (txt) => `
     </td></tr></table></td></tr>`;
 
 const nextSteps = (b) => {
-  const subject = encodeURIComponent(b ? `Presupuesto ${b.name}` : "Presupuesto cestas de Navidad");
-  const wa = encodeURIComponent(b ? `Hola, me gustaría un presupuesto del ${b.name}.` : "Hola, me gustaría un presupuesto de cestas de Navidad.");
+  const opts = [
+    ["Quiero un presupuesto", "Hola, quiero un presupuesto.\nNúmero de cestas:\nFecha de entrega:\nLugar de entrega:"],
+    ["Busco algo según mi presupuesto", "Hola, busco cestas de unos ___ € por persona para ___ personas."],
+    ["Quiero personalizarlas (tarjeta, logo…)", "Hola, nos gustaría personalizar las cestas con:"],
+    ["Necesito entregas en varias direcciones", "Hola, necesitaríamos entregar en estas direcciones:"],
+    ["Tengo otra pregunta", "Hola, quería preguntaros:"],
+  ];
+  const opt = ([label, text]) => {
+    const subject = encodeURIComponent((b ? b.name + " · " : "") + label);
+    return `<a href="mailto:${CONTACT.email}?subject=${subject}&body=${encodeURIComponent(text + "\n\n")}" style="display:block;background:${C.card};border:1px solid ${C.line};border-radius:12px;padding:14px 18px;margin:0 0 10px;font-family:${SANS};font-size:15px;color:${C.navy};text-decoration:none"><span style="color:${C.gold}">&#10148;</span>&nbsp; ${label}</a>`;
+  };
   return `
   <tr><td style="padding:26px 6px 0">
-    <h2 style="margin:0 0 8px;font-family:${SERIF};font-weight:normal;font-size:24px;color:${C.navy}">¿Te preparamos un presupuesto?</h2>
-    <p style="margin:0 0 14px;font-family:${SANS};font-size:15px;line-height:1.6;color:${C.muted}">Responde a este correo y cuéntanos <strong style="color:${C.navy}">cuántas cestas</strong> necesitas, la <strong style="color:${C.navy}">fecha</strong> y el <strong style="color:${C.navy}">lugar de entrega</strong>, y si quieres <strong style="color:${C.navy}">tarjeta o personalización</strong>. Te contestamos en 24–48 h laborables, sin compromiso.</p>
-    ${button(`mailto:${CONTACT.email}?subject=${subject}`, "Pedir presupuesto", C.goldBg, C.navy)}
-    ${button(`https://wa.me/${CONTACT.wa}?text=${wa}`, "Escribir por WhatsApp", C.card, C.green, C.green)}
-  </td></tr>`;
+    <h2 style="margin:0 0 8px;font-family:${SERIF};font-weight:normal;font-size:26px;color:${C.navy}">¿Qué te interesaría saber?</h2>
+    <p style="margin:0 0 14px;font-family:${SANS};font-size:15px;line-height:1.6;color:${C.muted}">Pulsa la opción que más se acerque y se abrirá un correo para contestarnos en un momento. Te respondemos en 24–48 h laborables, sin compromiso.</p>
+  </td></tr>
+  <tr><td style="padding:0">${opts.map(opt).join("")}</td></tr>
+  <tr><td style="padding:6px 6px 0;font-family:${SANS};font-size:15px;line-height:1.6;color:${C.muted}">O escríbenos por <a href="https://wa.me/${CONTACT.wa}?text=${encodeURIComponent(b ? "Hola, me interesa el " + b.name + "." : "Hola, me interesan vuestras cestas.")}" style="color:${C.green};font-weight:bold">WhatsApp</a> o llámanos al ${CONTACT.phone}.</td></tr>`;
 };
 
 function basketBlock(b, site) {
@@ -138,7 +148,7 @@ function renderClientEmail({ name, company, basket, site, highlights }) {
     "",
     "El 10% de nuestro beneficio va a la Fundación AFEAM.",
     "",
-    "¿Te preparamos un presupuesto? Responde a este correo con el número de cestas, la fecha y el lugar de entrega.",
+    "¿Qué te interesaría saber? Responde a este correo: presupuesto, personalización, entregas en varias direcciones u otra pregunta.",
     `WhatsApp: ${CONTACT.phone} · ${site}`,
     "",
     "Un abrazo,",
