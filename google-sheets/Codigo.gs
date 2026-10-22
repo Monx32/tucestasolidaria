@@ -26,6 +26,7 @@ const HEADERS = ["Fecha", "Nombre", "Empresa", "Correo", "Cesta", "Precio (IVA i
 const SHEET_P = "Propuestas";
 const HEADERS_P = ["Fecha", "Empresa", "Correo", "Cestas", "Unidades", "Total estimado (IVA incl.)", "Dirección de envío", "Población", "CP", "Comentarios", "Correo automático", "Estado", "Responsable", "Notas"];
 const ESTADOS = ["Pendiente", "Contactado", "Presupuesto enviado", "Pedido cerrado", "Descartado"];
+const FREE_SHIP = 800; // envío gratis desde esta base imponible (sin IVA), un único punto en la península
 const HIGHLIGHTS = ["lote-5", "lote-11", "jamonero-21", "cesta-41"];
 
 
@@ -196,7 +197,9 @@ function linesTable(lines, total) {
 function renderProposalEmails(p) {
   const where = `${p.address}, ${p.postal_code} ${p.city}`;
   const units = p.lines.reduce((n, l) => n + l.qty, 0);
-  const rows = [["Correo", p.email], ["Empresa", p.company || "—"], ["Entrega en", where], ...(p.notes ? [["Comentarios", p.notes]] : [])];
+  const base = p.lines.reduce((n, l) => n + l.qty * l.b.base, 0);
+  const ship = base >= FREE_SHIP ? `Gratis (pedido de ${eur(base)} sin IVA, desde ${eur(FREE_SHIP)})` : `A presupuestar (faltan ${eur(FREE_SHIP - base)} sin IVA para el envío gratis)`;
+  const rows = [["Correo", p.email], ["Empresa", p.company || "—"], ["Entrega en", where], ["Envío", ship], ...(p.notes ? [["Comentarios", p.notes]] : [])];
   const dataTable = `<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:16px;font-family:${SANS};font-size:15px;line-height:1.7;color:${C.navy}">
       ${rows.map(([k, v]) => `<tr><td valign="top" style="padding-right:18px;color:${C.muted};white-space:nowrap">${k}</td><td>${esc(v).replace(/\n/g, "<br>")}</td></tr>`).join("")}
     </table>`;
