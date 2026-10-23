@@ -191,6 +191,7 @@ function linesTable(lines, total) {
   return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
     ${lines.map((l) => `<tr><td style="${td}"><span style="color:${C.gold}">${l.qty}&times;</span>&nbsp; ${esc(l.b.name)}</td><td align="right" style="${td};font-family:'Courier New',monospace;white-space:nowrap">${eur(l.b.price)} · <strong>${eur(l.qty * l.b.price)}</strong></td></tr>`).join("")}
     <tr><td style="font-family:${SANS};font-size:14px;color:${C.muted};padding:12px 0 0">Total estimado (IVA incluido)</td><td align="right" style="font-family:'Courier New',monospace;font-size:22px;font-weight:bold;color:${C.gold};padding:12px 0 0">${eur(total)}</td></tr>
+    <tr><td></td><td align="right" style="font-family:'Courier New',monospace;font-size:12px;color:${C.muted};padding:2px 0 0">${eur(lines.reduce((n, l) => n + l.qty * l.b.base, 0))} + ${eur(lines.reduce((n, l) => n + l.qty * l.b.iva, 0))} IVA</td></tr>
   </table>`;
 }
 
@@ -198,7 +199,7 @@ function renderProposalEmails(p) {
   const where = `${p.address}, ${p.postal_code} ${p.city}`;
   const units = p.lines.reduce((n, l) => n + l.qty, 0);
   const base = p.lines.reduce((n, l) => n + l.qty * l.b.base, 0);
-  const ship = base >= FREE_SHIP ? `Gratis (pedido de ${eur(base)} sin IVA, desde ${eur(FREE_SHIP)})` : `A presupuestar (faltan ${eur(FREE_SHIP - base)} sin IVA para el envío gratis)`;
+  const ship = base >= FREE_SHIP ? `Gratis (envío gratis a partir de ${FREE_SHIP} € sin IVA)` : `Según presupuesto (envío gratis a partir de ${FREE_SHIP} € sin IVA)`;
   const rows = [["Correo", p.email], ["Empresa", p.company || "—"], ["Entrega en", where], ["Envío", ship], ...(p.notes ? [["Comentarios", p.notes]] : [])];
   const dataTable = `<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:16px;font-family:${SANS};font-size:15px;line-height:1.7;color:${C.navy}">
       ${rows.map(([k, v]) => `<tr><td valign="top" style="padding-right:18px;color:${C.muted};white-space:nowrap">${k}</td><td>${esc(v).replace(/\n/g, "<br>")}</td></tr>`).join("")}
