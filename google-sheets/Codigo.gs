@@ -168,7 +168,7 @@ function renderClientEmail({ name, company, basket, site, highlights, questions 
 }
 
 function renderNotifyEmail({ name, company, email, basket, questions }) {
-  const rows = [...(name ? [["Nombre", name]] : []), ["Empresa", company], ["Correo", email], ["Cesta", basket ? `${basket.name} · ${eur(basket.price)}` : "Catálogo general"], ...(questions ? [["Mensaje", questions]] : [])];
+  const rows = [...(name ? [["Nombre", name]] : []), ["Nombre o empresa", company], ["Correo", email], ["Cesta", basket ? `${basket.name} · ${eur(basket.price)}` : "Catálogo general"], ...(questions ? [["Mensaje", questions]] : [])];
   const body = `
   <tr><td style="background:${C.card};border:1px solid ${C.line};border-radius:14px;padding:24px 26px">
     <h1 style="margin:0 0 14px;font-family:${SERIF};font-weight:normal;font-size:26px;color:${C.navy}">Nuevo mensaje · Pedir información</h1>
@@ -200,7 +200,7 @@ function renderProposalEmails(p) {
   const units = p.lines.reduce((n, l) => n + l.qty, 0);
   const base = p.lines.reduce((n, l) => n + l.qty * l.b.base, 0);
   const ship = base >= FREE_SHIP ? `Gratis (envío gratis a partir de ${FREE_SHIP} € sin IVA)` : `Según presupuesto (envío gratis a partir de ${FREE_SHIP} € sin IVA)`;
-  const rows = [["Correo", p.email], ["Empresa", p.company || "—"], ["Entrega en", where], ["Envío", ship], ...(p.notes ? [["Comentarios", p.notes]] : [])];
+  const rows = [["Correo", p.email], ["Nombre o empresa", p.company], ["Entrega en", where], ["Envío", ship], ...(p.notes ? [["Comentarios", p.notes]] : [])];
   const dataTable = `<table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:16px;font-family:${SANS};font-size:15px;line-height:1.7;color:${C.navy}">
       ${rows.map(([k, v]) => `<tr><td valign="top" style="padding-right:18px;color:${C.muted};white-space:nowrap">${k}</td><td>${esc(v).replace(/\n/g, "<br>")}</td></tr>`).join("")}
     </table>`;
@@ -321,9 +321,10 @@ function appendLocked_(sheetName, setup, row) {
 }
 
 function doInfo_(body, email, byId, clean) {
-  const name = clean(body.name, 80), company = clean(body.company, 120);
+  const company = clean(body.company || body.name, 120);
+  const name = clean(body.name, 80) === company ? "" : clean(body.name, 80); // el formulario pide «Nombre o empresa» en un solo campo
   const questions = String(body.questions == null ? "" : body.questions).trim().slice(0, 1500);
-  if (!company) return json_({ ok: false, error: "Indica el nombre de tu empresa." });
+  if (!company) return json_({ ok: false, error: "Indica tu nombre o el de tu empresa." });
   if (!questions) return json_({ ok: false, error: "Escribe tu mensaje." });
   const basket = body.basket_id ? byId[body.basket_id] || null : null;
   const { sh, row } = appendLocked_(SHEET, (ss) => { configurar(); return ss.getSheetByName(SHEET); },
@@ -344,8 +345,9 @@ function doInfo_(body, email, byId, clean) {
 }
 
 function doProposal_(body, email, byId, clean) {
-  const company = clean(body.company, 120), address = clean(body.address, 200), city = clean(body.city, 80), postal_code = clean(body.postal_code, 10);
+  const company = clean(body.company || body.name, 120), address = clean(body.address, 200), city = clean(body.city, 80), postal_code = clean(body.postal_code, 10);
   const notes = String(body.notes == null ? "" : body.notes).trim().slice(0, 1500);
+  if (!company) return json_({ ok: false, error: "Indica tu nombre o el de tu empresa." });
   if (!address || !city || !postal_code) return json_({ ok: false, error: "Indica la dirección, población y código postal de envío." });
   const lines = (Array.isArray(body.items) ? body.items : []).slice(0, 100)
     .map((i) => ({ b: byId[i && i.id], qty: Math.max(1, Math.min(9999, parseInt(i && i.qty, 10) || 1)) }))
